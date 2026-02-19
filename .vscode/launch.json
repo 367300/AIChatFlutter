@@ -1,24 +1,25 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Python: AI Chat",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/main.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Python: Build",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/build.py",
-            "console": "integratedTerminal",
-            "justMyCode": false
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter (выберите устройство)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "Flutter: Android",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "android"]
+    },
+    {
+      "name": "Flutter: Windows",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "windows"]
+    }
+  ]
 }
