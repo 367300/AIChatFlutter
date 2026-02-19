@@ -1,0 +1,7 @@
+# Нормализация окончаний строк — избегаем ложных изменений (LF vs CRLF)
+* text=auto
+
+# CMake и сгенерированные файлы Flutter — всегда LF в репозитории
+*.cmake text eol=lf
+*.cc text eol=lf
+*.h text eol=lf

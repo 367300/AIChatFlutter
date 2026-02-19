@@ -184,8 +184,8 @@ class MyApp extends StatelessWidget {
             backgroundColor: Color(0xFF262626), // Цвет фона
             foregroundColor: Colors.white, // Цвет текста
           ),
-          // Настройка темы диалогов
-          dialogTheme: const DialogTheme(
+          // Настройка темы диалогов (DialogThemeData в Flutter 3.27+)
+          dialogTheme: const DialogThemeData(
             backgroundColor: Color(0xFF333333), // Цвет фона
             titleTextStyle: TextStyle(
               color: Colors.white, // Цвет заголовка
