@@ -12,8 +12,8 @@ import 'providers/chat_provider.dart';
 import 'providers/settings_provider.dart';
 // Импорт сервиса настроек
 import 'services/settings_service.dart';
-// Импорт основного экрана чата
-import 'screens/chat_screen.dart';
+// Импорт главного экрана с вкладками
+import 'screens/main_screen.dart';
 // Импорт экрана настроек
 import 'screens/settings_screen.dart';
 
@@ -245,7 +245,7 @@ class MyApp extends StatelessWidget {
         ),
         // Маршруты приложения
         routes: {
-          '/': (context) => const ChatScreen(),
+          '/': (context) => const MainScreen(),
           '/settings': (context) => const SettingsScreen(),
         },
         // Основной экран приложения
