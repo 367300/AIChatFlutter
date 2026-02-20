@@ -4,18 +4,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 // Import Flutter core classes
 import 'package:flutter/foundation.dart';
-// Import package for working with .env files
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+// Import service for settings (user preferences + .env fallback)
+import '../services/settings_service.dart';
 
 // Класс клиента для работы с API OpenRouter
 class OpenRouterClient {
-  // API ключ для авторизации
-  final String? apiKey;
-  // Базовый URL API
-  final String? baseUrl;
-  // Заголовки HTTP запросов
-  final Map<String, String> headers;
-
   // Единственный экземпляр класса (Singleton)
   static final OpenRouterClient _instance = OpenRouterClient._internal();
 
@@ -25,56 +18,44 @@ class OpenRouterClient {
   }
 
   // Приватный конструктор для реализации Singleton
-  OpenRouterClient._internal()
-      : apiKey =
-            dotenv.env['OPENROUTER_API_KEY'], // Получение API ключа из .env
-        baseUrl = dotenv.env['BASE_URL'], // Получение базового URL из .env
-        headers = {
-          'Authorization':
-              'Bearer ${dotenv.env['OPENROUTER_API_KEY']}', // Заголовок авторизации
-          'Content-Type': 'application/json', // Указание типа контента
-          'X-Title': 'AI Chat Flutter', // Название приложения
-        } {
-    // Инициализация клиента
-    _initializeClient();
+  OpenRouterClient._internal();
+
+  // Получение текущего API ключа из настроек
+  String? get apiKey {
+    final key = SettingsService.getString(SettingsKeys.apiKey);
+    return key.isEmpty ? null : key;
   }
 
-  // Метод инициализации клиента
-  void _initializeClient() {
-    try {
-      if (kDebugMode) {
-        print('Initializing OpenRouterClient...');
-        print('Base URL: $baseUrl');
-      }
-
-      // Проверка наличия API ключа
-      if (apiKey == null) {
-        throw Exception('OpenRouter API key not found in .env');
-      }
-      // Проверка наличия базового URL
-      if (baseUrl == null) {
-        throw Exception('BASE_URL not found in .env');
-      }
-
-      if (kDebugMode) {
-        print('OpenRouterClient initialized successfully');
-      }
-    } catch (e, stackTrace) {
-      if (kDebugMode) {
-        print('Error initializing OpenRouterClient: $e');
-        print('Stack trace: $stackTrace');
-      }
-      rethrow;
-    }
+  // Получение текущего базового URL из настроек
+  String? get baseUrl {
+    final url = SettingsService.getString(
+      SettingsKeys.baseUrl,
+      defaultValue: ProviderPresets.openRouter,
+    );
+    return url.isEmpty ? null : url;
   }
+
+  // Построение заголовков для запроса (читает актуальные настройки)
+  Map<String, String> get _headers => {
+        'Authorization': 'Bearer ${apiKey ?? ''}',
+        'Content-Type': 'application/json',
+        'X-Title': 'AI Chat Flutter',
+      };
 
   // Метод получения списка доступных моделей
   Future<List<Map<String, dynamic>>> getModels() async {
     try {
+      final url = baseUrl;
+      if (url == null || url.isEmpty) {
+        throw Exception('BASE_URL не настроен. Укажите провайдера в настройках.');
+      }
+      if (apiKey == null || apiKey!.isEmpty) {
+        throw Exception('API ключ не найден. Укажите ключ в настройках.');
+      }
       // Выполнение GET запроса для получения моделей
       final response = await http.get(
-        Uri.parse('$baseUrl/models'),
-        headers: headers,
+        Uri.parse('$url/models'),
+        headers: _headers,
       );
 
       if (kDebugMode) {
@@ -141,10 +122,8 @@ class OpenRouterClient {
         'messages': [
           {'role': 'user', 'content': message} // Сообщение пользователя
         ],
-        'max_tokens': int.parse(dotenv.env['MAX_TOKENS'] ??
-            '1000'), // Максимальное количество токенов
-        'temperature': double.parse(
-            dotenv.env['TEMPERATURE'] ?? '0.7'), // Температура генерации
+        'max_tokens': SettingsService.getInt(SettingsKeys.maxTokens, defaultValue: 1000),
+        'temperature': SettingsService.getDouble(SettingsKeys.temperature, defaultValue: 0.7),
         'stream': false, // Отключение потоковой передачи
       };
 
@@ -152,10 +131,12 @@ class OpenRouterClient {
         print('Sending message to API: ${json.encode(data)}');
       }
 
+      final url = baseUrl;
+      if (url == null || url.isEmpty) throw Exception('BASE_URL не настроен');
       // Выполнение POST запроса
       final response = await http.post(
-        Uri.parse('$baseUrl/chat/completions'),
-        headers: headers,
+        Uri.parse('$url/chat/completions'),
+        headers: _headers,
         body: json.encode(data),
       );
 
@@ -186,12 +167,13 @@ class OpenRouterClient {
   // Метод получения текущего баланса
   Future<String> getBalance() async {
     try {
+      final url = baseUrl;
+      if (url == null || url.isEmpty) return '\$0.00';
+      final path = url.contains('vsetgpt.ru') ? '$url/balance' : '$url/credits';
       // Выполнение GET запроса для получения баланса
       final response = await http.get(
-        Uri.parse(baseUrl?.contains('vsegpt.ru') == true
-            ? '$baseUrl/balance'
-            : '$baseUrl/credits'),
-        headers: headers,
+        Uri.parse(path),
+        headers: _headers,
       );
 
       if (kDebugMode) {
@@ -203,7 +185,7 @@ class OpenRouterClient {
         // Парсинг данных о балансе
         final data = json.decode(response.body);
         if (data != null && data['data'] != null) {
-          if (baseUrl?.contains('vsegpt.ru') == true) {
+          if (url.contains('vsetgpt.ru')) {
             final credits =
                 double.tryParse(data['data']['credits'].toString()) ??
                     0.0; // Доступно средств
@@ -216,9 +198,7 @@ class OpenRouterClient {
           }
         }
       }
-      return baseUrl?.contains('vsegpt.ru') == true
-          ? '0.00₽'
-          : '\$0.00'; // Возвращение нулевого баланса по умолчанию
+      return url.contains('vsetgpt.ru') ? '0.00₽' : '\$0.00';
     } catch (e) {
       if (kDebugMode) {
         print('Error getting balance: $e');
@@ -230,7 +210,8 @@ class OpenRouterClient {
   // Метод форматирования цен
   String formatPricing(double pricing) {
     try {
-      if (baseUrl?.contains('vsegpt.ru') == true) {
+      final url = baseUrl ?? '';
+      if (url.contains('vsetgpt.ru')) {
         return '${pricing.toStringAsFixed(3)}₽/K';
       } else {
         return '\$${(pricing * 1000000).toStringAsFixed(3)}/M';

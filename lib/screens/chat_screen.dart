@@ -263,6 +263,7 @@ class ChatScreen extends StatelessWidget {
           _buildModelSelector(context),
           const Spacer(),
           _buildBalanceDisplay(context),
+          _buildSettingsButton(context),
           _buildMenuButton(context),
         ],
       ),
@@ -371,6 +372,20 @@ class ChatScreen extends StatelessWidget {
             ],
           ),
         );
+      },
+    );
+  }
+
+  // Построение кнопки настроек
+  Widget _buildSettingsButton(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.settings, color: Colors.white, size: 20),
+      tooltip: 'Настройки провайдера',
+      onPressed: () async {
+        await Navigator.of(context).pushNamed('/settings');
+        if (context.mounted) {
+          await context.read<ChatProvider>().refreshAfterSettingsChange();
+        }
       },
     );
   }

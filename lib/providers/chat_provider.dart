@@ -81,6 +81,12 @@ class ChatProvider with ChangeNotifier {
     }
   }
 
+  /// Обновить данные после смены настроек (модели, баланс)
+  Future<void> refreshAfterSettingsChange() async {
+    await _loadModels();
+    await _loadBalance();
+  }
+
   // Метод загрузки доступных моделей
   Future<void> _loadModels() async {
     try {

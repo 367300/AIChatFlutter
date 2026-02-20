@@ -8,8 +8,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 // Импорт кастомного провайдера для управления состоянием чата
 import 'providers/chat_provider.dart';
+// Импорт провайдера настроек
+import 'providers/settings_provider.dart';
+// Импорт сервиса настроек
+import 'services/settings_service.dart';
 // Импорт основного экрана чата
 import 'screens/chat_screen.dart';
+// Импорт экрана настроек
+import 'screens/settings_screen.dart';
 
 // Виджет для обработки и отлова ошибок в приложении
 class ErrorBoundaryWidget extends StatelessWidget {
@@ -81,10 +87,15 @@ void main() async {
       debugPrint('Stack trace: ${details.stack}');
     };
 
-    // Загрузка переменных окружения из .env файла
-    await dotenv.load(fileName: ".env");
-    // Логирование успешной загрузки
-    debugPrint('Environment loaded');
+    // Инициализация сервиса настроек (до загрузки .env)
+    await SettingsService.init();
+    // Загрузка переменных окружения из .env файла (если есть)
+    try {
+      await dotenv.load(fileName: ".env");
+      debugPrint('Environment loaded');
+    } catch (_) {
+      debugPrint('.env not found, using defaults');
+    }
     // Проверка наличия API ключа
     debugPrint('API Key present: ${dotenv.env['OPENROUTER_API_KEY'] != null}');
     // Логирование базового URL
@@ -125,23 +136,22 @@ class MyApp extends StatelessWidget {
   // Метод построения виджета
   @override
   Widget build(BuildContext context) {
-    // Используем ChangeNotifierProvider для управления состоянием
-    return ChangeNotifierProvider(
-      // Функция создания провайдера
-      create: (_) {
-        try {
-          // Создаем экземпляр ChatProvider
-          return ChatProvider();
-        } catch (e, stackTrace) {
-          // Логирование ошибки создания провайдера
-          debugPrint('Error creating ChatProvider: $e');
-          // Логирование стека вызовов
-          debugPrint('Stack trace: $stackTrace');
-          // Повторный выброс исключения
-          rethrow;
-        }
-      },
-      // Основной виджет MaterialApp
+    // MultiProvider для ChatProvider и SettingsProvider
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) {
+            try {
+              return ChatProvider();
+            } catch (e, stackTrace) {
+              debugPrint('Error creating ChatProvider: $e');
+              debugPrint('Stack trace: $stackTrace');
+              rethrow;
+            }
+          },
+        ),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+      ],
       child: MaterialApp(
         // Настройка поведения прокрутки
         builder: (context, child) {
@@ -233,8 +243,13 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
+        // Маршруты приложения
+        routes: {
+          '/': (context) => const ChatScreen(),
+          '/settings': (context) => const SettingsScreen(),
+        },
         // Основной экран приложения
-        home: const ChatScreen(),
+        initialRoute: '/',
       ),
     );
   }
