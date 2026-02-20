@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'chat_screen.dart';
 // Импорт экрана статистики
 import 'statistics_screen.dart';
+// Импорт экрана графика расхода
+import 'expense_chart_screen.dart';
 
-/// Главный экран с нижними вкладками: Статистика и Чат
+/// Главный экран с нижними вкладками: Статистика, Чат, Расход по дням
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -19,6 +21,7 @@ class _MainScreenState extends State<MainScreen> {
   static const List<Widget> _screens = [
     StatisticsScreen(),
     ChatScreen(),
+    ExpenseChartScreen(),
   ];
 
   @override
@@ -56,6 +59,13 @@ class _MainScreenState extends State<MainScreen> {
                     index: 1,
                     icon: Icons.chat,
                     label: 'Чат',
+                  ),
+                ),
+                Expanded(
+                  child: _buildNavItem(
+                    index: 2,
+                    icon: Icons.show_chart,
+                    label: 'Расход',
                   ),
                 ),
               ],
